@@ -5,6 +5,7 @@ import br.ufrn.iury.sebito.domain.model.Projeto;
 import br.ufrn.iury.sebito.domain.repository.MarcoRepository;
 import br.ufrn.iury.sebito.domain.repository.ProjetoRepository;
 import br.ufrn.iury.sebito.dto.projeto.AlterarStatusProjetoRequestDTO;
+import br.ufrn.iury.sebito.dto.projeto.AtualizarOrcamentoExecutadoRequestDTO;
 import br.ufrn.iury.sebito.dto.projeto.ProjetoRequestDTO;
 import br.ufrn.iury.sebito.dto.projeto.ProjetoResponseDTO;
 import br.ufrn.iury.sebito.exception.ResourceNotFoundException;
@@ -55,6 +56,17 @@ public class ProjetoService {
         validarMudancaDeStatus(projetoId, requestDTO.novoStatus());
 
         projeto.setStatus(requestDTO.novoStatus());
+
+        Projeto projetoAtualizado = projetoRepository.save(projeto);
+
+        return toResponseDTO(projetoAtualizado);
+    }
+
+    public ProjetoResponseDTO atualizarOrcamentoExecutado(Long projetoId, AtualizarOrcamentoExecutadoRequestDTO requestDTO) {
+        Projeto projeto = projetoRepository.findById(projetoId)
+                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado"));
+
+        projeto.setOrcamentoExecutado(requestDTO.orcamentoExecutado());
 
         Projeto projetoAtualizado = projetoRepository.save(projeto);
 
