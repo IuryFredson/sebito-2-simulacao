@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: sebito-postgres
+    environment:
+      POSTGRES_DB: sebito
+      POSTGRES_USER: sebito
+      POSTGRES_PASSWORD: sebito
+    ports:
+      - "5432:5432"
+    volumes:
+      - sebito_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  sebito_postgres_data:
