@@ -4,6 +4,7 @@ import br.ufrn.iury.sebito.domain.enums.StatusProjeto;
 import br.ufrn.iury.sebito.domain.model.Projeto;
 import br.ufrn.iury.sebito.domain.repository.MarcoRepository;
 import br.ufrn.iury.sebito.domain.repository.ProjetoRepository;
+import br.ufrn.iury.sebito.domain.rules.ProjetoStatusTransitionRules;
 import br.ufrn.iury.sebito.dto.projeto.AlterarStatusProjetoRequestDTO;
 import br.ufrn.iury.sebito.dto.projeto.AtualizarOrcamentoExecutadoRequestDTO;
 import br.ufrn.iury.sebito.dto.projeto.ProjetoRequestDTO;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ProjetoService {
@@ -53,7 +55,7 @@ public class ProjetoService {
         Projeto projeto = projetoRepository.findById(projetoId)
                 .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado"));
 
-        validarMudancaDeStatus(projetoId, requestDTO.novoStatus());
+        validarMudancaDeStatus(projeto, requestDTO.novoStatus());
 
         projeto.setStatus(requestDTO.novoStatus());
 
@@ -79,10 +81,28 @@ public class ProjetoService {
         }
     }
 
-    private void validarMudancaDeStatus(Long projetoId, StatusProjeto novoStatus) {
+    private void validarMudancaDeStatus(Projeto projeto, StatusProjeto novoStatus) {
+        StatusProjeto statusAtual = projeto.getStatus();
+
+        if (statusAtual == novoStatus) {
+            throw new IllegalArgumentException("O projeto já está no status informado");
+        }
+
+        boolean transicaoValida = ProjetoStatusTransitionRules.isTransicaoValida(statusAtual, novoStatus);
+
+        if (!transicaoValida) {
+            Set<StatusProjeto> proximosValidos = ProjetoStatusTransitionRules.proximosStatusValidos(statusAtual);
+
+            throw new IllegalArgumentException(
+                    "Transição de status inválida: de " + statusAtual +
+                            " para " + novoStatus +
+                            ". Próximos status válidos: " + proximosValidos
+            );
+        }
+
         if (novoStatus == StatusProjeto.EM_EXECUCAO) {
             long marcosObrigatoriosPendentes =
-                    marcoRepository.countByProjetoIdAndObrigatorioTrueAndConcluidoFalse(projetoId);
+                    marcoRepository.countByProjetoIdAndObrigatorioTrueAndConcluidoFalse(projeto.getId());
 
             if (marcosObrigatoriosPendentes > 0) {
                 throw new IllegalArgumentException(
